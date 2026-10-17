@@ -3,40 +3,41 @@ import { fmtDateTime, num } from '../utils.js';
 
 export function ReceiptBody({ bill }) {
   const s = bill.snapshot;
+  const cur = s.currency || '₹';
   return (
     <div className="receipt">
       <div className="c shop">{s.shopName}</div>
-      {s.address && <div className="c">{s.address}</div>}
+      {s.address && <div className="c addr">{s.address}</div>}
       {s.phone && <div className="c">Ph: {s.phone}</div>}
       <hr />
-      <div className="r"><span>Bill No</span><span>{bill.number}</span></div>
-      <div className="r"><span>Date</span><span>{fmtDateTime(bill.createdAt)}</span></div>
+      <div className="kv"><span>Bill No</span><b>{bill.number}</b></div>
+      <div className="kv"><span>Date</span><span>{fmtDateTime(bill.createdAt)}</span></div>
       <hr />
+      <div className="it head">
+        <span>Item</span><span className="n">Qty</span><span className="n">Rate</span><span className="n">Amount</span>
+      </div>
       {bill.items.map((i) => (
-        <div key={i.id} style={{ marginBottom: 4 }}>
-          <div>{i.name}</div>
-          <div className="r">
-            <span>&nbsp;&nbsp;{i.qty} x {num(i.price)}</span>
-            <span>{num(i.qty * i.price)}</span>
-          </div>
+        <div className="it" key={i.id}>
+          <span className="nm">{i.name}</span>
+          <span className="n">{i.qty}</span>
+          <span className="n">{num(i.price)}</span>
+          <span className="n">{num(i.qty * i.price)}</span>
         </div>
       ))}
       <hr />
-      <div className="r"><span>Subtotal</span><span>{s.currency}{num(bill.subtotal)}</span></div>
+      <div className="kv"><span>Subtotal</span><span>{cur}{num(bill.subtotal)}</span></div>
       {bill.taxAmount > 0 && (
-        <div className="r"><span>{bill.taxName} ({bill.taxRate}%)</span><span>{s.currency}{num(bill.taxAmount)}</span></div>
+        <div className="kv"><span>{bill.taxName} ({bill.taxRate}%)</span><span>{cur}{num(bill.taxAmount)}</span></div>
       )}
       {bill.roundOff !== 0 && (
-        <div className="r"><span>Round off</span><span>{bill.roundOff > 0 ? '+' : ''}{num(bill.roundOff)}</span></div>
+        <div className="kv"><span>Round off</span><span>{bill.roundOff > 0 ? '+' : '-'}{cur}{num(Math.abs(bill.roundOff))}</span></div>
       )}
-      <div className="r b" style={{ fontSize: 15, marginTop: 4 }}>
-        <span>TOTAL</span><span>{s.currency}{num(bill.total)}</span>
-      </div>
+      <div className="kv total"><span>TOTAL</span><span>{cur}{num(bill.total)}</span></div>
       <hr />
       {bill.payments.map((p, idx) => (
-        <div className="r" key={idx}><span>Paid by {p.method}</span><span>{s.currency}{num(p.amount)}</span></div>
+        <div className="kv" key={idx}><span>Paid by {p.method}</span><span>{cur}{num(p.amount)}</span></div>
       ))}
-      {s.footer && (<><hr /><div className="c">{s.footer}</div></>)}
+      {s.footer && (<><hr /><div className="c foot">{s.footer}</div></>)}
     </div>
   );
 }

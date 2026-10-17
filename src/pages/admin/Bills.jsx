@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Search, Eye, Printer, FileDown, Download } from 'lucide-react';
+import { Search, Eye, Printer } from 'lucide-react';
 import { useStore } from '../../store.js';
-import { money, num, fmtDateTime, exportCSV, printBill, shareReceiptPdf, stamp, getRange, inRange } from '../../utils.js';
+import { money, num, fmtDateTime, exportCSV, exportPDF, printBill, stamp, getRange, inRange } from '../../utils.js';
+import ExportButtons from '../../components/ExportButtons.jsx';
 import Modal from '../../components/Modal.jsx';
 import { ReceiptBody, PrintPortal } from '../../components/Receipt.jsx';
 
@@ -17,21 +18,26 @@ export default function Bills() {
   const t = q.trim().toLowerCase();
   const list = bills.filter((b) => (!t || b.number.toLowerCase().includes(t)) && inRange(b.createdAt, range));
   const total = list.reduce((s, b) => s + b.total, 0);
+  const head = ['Bill No', 'Date', 'Items', 'Payment', `Total (${cur})`];
+  const rows = list.map((b) => [b.number, fmtDateTime(b.createdAt), b.items.map((i) => `${i.name} x${i.qty}`).join('; '), b.paymentLabel, num(b.total)]);
 
   return (
     <>
       <div className="page-title">
         Bill History
-        <button
-          className="btn sm"
+        <ExportButtons
           disabled={!list.length}
-          onClick={() =>
-            exportCSV(`bills-${stamp()}.csv`, ['Bill No', 'Date', 'Items', 'Payment', `Total (${cur})`],
-              list.map((b) => [b.number, fmtDateTime(b.createdAt), b.items.map((i) => `${i.name} x${i.qty}`).join('; '), b.paymentLabel, num(b.total)]))
+          onCsv={() => exportCSV(`bills-${stamp()}.csv`, head, rows)}
+          onPdf={() =>
+            exportPDF({
+              filename: `bills-${stamp()}.pdf`,
+              title: `${settings.shopName} - Bill History`,
+              subtitle: `${list.length} bills | Total ${cur}${num(total)}`,
+              head,
+              rows,
+            })
           }
-        >
-          <Download size={14} /> CSV
-        </button>
+        />
       </div>
 
       <div className="row wrap" style={{ marginBottom: 14 }}>
@@ -76,7 +82,6 @@ export default function Bills() {
         <Modal title={`Bill ${view.number}`} onClose={() => setView(null)}>
           <ReceiptBody bill={view} />
           <div className="actions">
-            <button className="btn" onClick={() => shareReceiptPdf(view)}><FileDown size={16} /> PDF</button>
             <button className="btn primary" onClick={() => printBill(view)}><Printer size={16} /> Reprint</button>
             <button className="btn" onClick={() => setView(null)}>Close</button>
           </div>

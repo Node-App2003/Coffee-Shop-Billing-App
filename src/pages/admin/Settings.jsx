@@ -19,7 +19,8 @@ export default function Settings() {
       shopName: s.shopName.trim() || 'My Coffee Shop',
       currency: s.currency.trim() || '₹',
       taxRate: Number(s.taxRate) || 0,
-      billPrefix: (s.billPrefix || 'CB').trim().toUpperCase(),
+      billPrefix: (s.billPrefix || 'FB').trim().toUpperCase(),
+      upiId: (s.upiId || '').trim(),
     });
     setSaved(true);
   };
@@ -73,6 +74,13 @@ export default function Settings() {
               <input className="input" value={s.currency} maxLength={4} onChange={(e) => set('currency', e.target.value)} /></div>
             <div className="field grow"><label>Bill number prefix</label>
               <input className="input" value={s.billPrefix} maxLength={6} onChange={(e) => set('billPrefix', e.target.value)} /></div>
+          </div>
+          <div className="field"><label>UPI ID (QR payment-ku)</label>
+            <input className="input" autoCapitalize="none" placeholder="yourshop@okaxis" value={s.upiId || ''} onChange={(e) => set('upiId', e.target.value)} />
+            <span className="muted small">Billing-la UPI select pannina indha ID-ku exact amount-oda QR varum.</span>
+            {s.upiId && !/^[\w.\-]{2,}@[A-Za-z]{2,}$/.test(s.upiId.trim()) && (
+              <span className="err">UPI ID format sari illa (example: name@bank)</span>
+            )}
           </div>
           <div className="field"><label>Bill footer message</label>
             <input className="input" value={s.footer} onChange={(e) => set('footer', e.target.value)} /></div>

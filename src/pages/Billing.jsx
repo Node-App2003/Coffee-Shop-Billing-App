@@ -1,11 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Search, Plus, Minus, Trash2, ShoppingCart, Banknote, Smartphone, CreditCard,
-  Wallet, Printer, FileDown, Lock, Coffee, X, Check,
+  Wallet, Printer, Lock, Coffee, X, Check, Smartphone as Phone,
 } from 'lucide-react';
 import { useStore, actions } from '../store.js';
-import { calcTotals, money, num, round2, printBill, shareReceiptPdf } from '../utils.js';
+import QRCode from 'qrcode';
+import { calcTotals, money, num, round2, printBill } from '../utils.js';
 import Modal from '../components/Modal.jsx';
 import { ReceiptBody, PrintPortal } from '../components/Receipt.jsx';
 
@@ -28,7 +29,9 @@ export default function Billing() {
   const [method, setMethod] = useState('Cash');
   const [split, setSplit] = useState({ Cash: '', UPI: '', Card: '' });
   const [tendered, setTendered] = useState('');
-  const [bill, setBill] = useState(null);
+  const [draft, setDraft] = useState(null); // bill preview, NOT stored yet
+  const [saved, setSaved] = useState(false); // true once Print has stored it
+  const [qr, setQr] = useState('');
 
   const totals = useMemo(() => calcTotals(cart, settings), [cart, settings]);
   const itemCount = cart.reduce((s, i) => s + i.qty, 0);
@@ -71,6 +74,21 @@ export default function Billing() {
   const canConfirm = cart.length > 0 && (method !== 'Split' || splitOk);
   const change = method === 'Cash' && tendered !== '' ? round2(Number(tendered) - totals.total) : null;
 
+  /* ---- UPI QR: exact amount + shop UPI id from Admin > Settings ---- */
+  const upiId = (settings.upiId || '').trim();
+  const upiAmount = method === 'UPI' ? totals.total : method === 'Split' ? round2(Number(split.UPI) || 0) : 0;
+  const upiLink = upiId && upiAmount > 0
+    ? `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(settings.shopName)}&am=${upiAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`${settings.shopName} bill`)}`
+    : '';
+  useEffect(() => {
+    let live = true;
+    if (!payOpen || !upiLink) { setQr(''); return undefined; }
+    QRCode.toDataURL(upiLink, { width: 440, margin: 1, errorCorrectionLevel: 'M' })
+      .then((u) => live && setQr(u))
+      .catch(() => live && setQr(''));
+    return () => { live = false; };
+  }, [payOpen, upiLink]);
+
   const confirm = () => {
     let payments;
     if (method === 'Split') {
@@ -81,17 +99,33 @@ export default function Billing() {
       payments = [{ method, amount: totals.total }];
     }
     const paymentLabel = payments.length > 1 ? 'Split' : payments[0].method;
-    const saved = actions.addBill({
-      items: cart.map((i) => ({ id: i.id, name: i.name, price: i.price, qty: i.qty })),
-      totals,
-      payments,
-      paymentLabel,
-    });
-    setBill(saved);
-    setCart([]);
+    // only a preview here - the bill is stored when Print is tapped
+    setDraft(
+      actions.previewBill({
+        items: cart.map((i) => ({ id: i.id, name: i.name, price: i.price, qty: i.qty })),
+        totals,
+        payments,
+        paymentLabel,
+      })
+    );
+    setSaved(false);
     setPayOpen(false);
-    setCartOpen(false);
   };
+
+  const printAndSave = async () => {
+    let b = draft;
+    if (!saved) {
+      b = actions.saveBill(draft); // stored now, with the final bill number
+      setDraft(b);
+      setSaved(true);
+      setCart([]);
+      setCartOpen(false);
+      await new Promise((r) => setTimeout(r, 80)); // let the print area re-render with the saved bill
+    }
+    await printBill(b);
+  };
+
+  const closeDraft = () => setDraft(null); // not printed => nothing saved, cart stays
 
   return (
     <>
@@ -294,6 +328,28 @@ export default function Billing() {
             </div>
           )}
 
+          {upiAmount > 0 && (
+            <div className="qr-box">
+              {!upiId ? (
+                <div className="err">
+                  UPI ID set pannala. Admin → Settings-la shop UPI ID add pannunga.
+                </div>
+              ) : qr ? (
+                <>
+                  <img src={qr} alt="UPI QR" />
+                  <div className="small muted" style={{ marginTop: 6 }}>
+                    Scan with any UPI app - {money(upiAmount, cur)} to {upiId}
+                  </div>
+                  <a className="btn sm" style={{ marginTop: 8, textDecoration: 'none' }} href={upiLink}>
+                    <Phone size={14} /> Open UPI app
+                  </a>
+                </>
+              ) : (
+                <div className="muted small">Generating QR...</div>
+              )}
+            </div>
+          )}
+
           <div className="actions">
             <button className="btn" onClick={() => setPayOpen(false)}>Cancel</button>
             <button className="btn primary" disabled={!canConfirm} onClick={confirm}>
@@ -303,22 +359,26 @@ export default function Billing() {
         </Modal>
       )}
 
-      {bill && (
-        <Modal title="Bill generated" onClose={() => setBill(null)}>
-          <div className="badge green" style={{ marginBottom: 10 }}>✓ Bill saved - {bill.number}</div>
-          <ReceiptBody bill={bill} />
+      {draft && (
+        <Modal title={saved ? 'Bill saved' : 'Bill preview'} onClose={closeDraft}>
+          {saved ? (
+            <div className="badge green" style={{ marginBottom: 10 }}>✓ Saved - {draft.number}</div>
+          ) : (
+            <div className="muted small" style={{ marginBottom: 10 }}>
+              Print tap pannina thaan bill save aagum.
+            </div>
+          )}
+          <ReceiptBody bill={draft} />
           <div className="actions">
-            <button className="btn" onClick={() => shareReceiptPdf(bill)}>
-              <FileDown size={16} /> PDF
+            {!saved && <button className="btn" onClick={closeDraft}>Back</button>}
+            <button className="btn primary" onClick={printAndSave}>
+              <Printer size={16} /> {saved ? 'Print again' : 'Print & Save'}
             </button>
-            <button className="btn" onClick={() => printBill(bill)}>
-              <Printer size={16} /> Print
-            </button>
-            <button className="btn primary" onClick={() => setBill(null)}>New Bill</button>
+            {saved && <button className="btn" onClick={closeDraft}>New Bill</button>}
           </div>
         </Modal>
       )}
-      <PrintPortal bill={bill} />
+      <PrintPortal bill={draft} />
     </>
   );
 }

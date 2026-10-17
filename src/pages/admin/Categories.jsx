@@ -1,14 +1,19 @@
 import { useState } from 'react';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { useStore, actions } from '../../store.js';
+import { exportCSV, exportPDF, stamp } from '../../utils.js';
+import ExportButtons from '../../components/ExportButtons.jsx';
 import Modal from '../../components/Modal.jsx';
 
 export default function Categories() {
-  const { categories, products } = useStore();
+  const { categories, products, settings } = useStore();
   const [edit, setEdit] = useState(null);
   const [error, setError] = useState('');
 
   const count = (id) => products.filter((p) => p.categoryId === id).length;
+
+  const head = ['Category', 'Products'];
+  const rows = categories.map((c) => [c.name, count(c.id)]);
 
   const save = () => {
     if (!edit.name.trim()) return setError('Category name is required');
@@ -28,9 +33,24 @@ export default function Categories() {
     <>
       <div className="page-title">
         Categories
-        <button className="btn primary" onClick={() => { setError(''); setEdit({ id: '', name: '', icon: '🍽️' }); }}>
-          <Plus size={16} /> Add Category
-        </button>
+        <div className="row wrap">
+          <ExportButtons
+            disabled={!categories.length}
+            onCsv={() => exportCSV(`categories-${stamp()}.csv`, head, rows)}
+            onPdf={() =>
+              exportPDF({
+                filename: `categories-${stamp()}.pdf`,
+                title: `${settings.shopName} - Categories`,
+                subtitle: `${categories.length} categories`,
+                head,
+                rows,
+              })
+            }
+          />
+          <button className="btn primary" onClick={() => { setError(''); setEdit({ id: '', name: '', icon: '🍽️' }); }}>
+            <Plus size={16} /> Add Category
+          </button>
+        </div>
       </div>
 
       <div className="card table-wrap">

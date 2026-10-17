@@ -93,3 +93,29 @@ capacitor.config.json Android app id/name
 - Admin password device-local protection - shop staff-ah thaduka; bank-level security illa.
 - Bluetooth thermal printer direct support illa. APK-la PDF share -> printer app-ku anuppalam. (Venumna Capacitor Bluetooth printer plugin add pannalaam.)
 - App name/id maathanum na `capacitor.config.json` (`appId`, `appName`) edit pannunga - `android/` create panra munnadiye.
+
+
+---
+
+## 6. Version 2 maatrangal
+- **UPI QR**: Admin → Settings → *UPI ID* add pannunga. Billing-la UPI select pannina andha ID-ku exact amount-oda QR varum (Split-la UPI amount-ku QR varum). "Open UPI app" button-um irukku.
+  App-ku payment success automatic-ah theriyaadhu (gateway illa). Customer pay panni phone-la success paartha piragu cashier **Confirm** pannanum.
+- **Bill save**: Confirm → *Bill preview*. **Print & Save** tap pannina thaan bill save aagum. *Back* pannina save aagathu, cart appadiye irukkum.
+- **Bill number**: `FB-2026-0001` (prefix-year-4 digit). Pudhu varusham 0001-la irundhu start aagum. Prefix Settings-la maathalaam.
+- **Bill page-la PDF button remove**, Print mattum. (Admin pages-la CSV + PDF irukku.)
+- **Receipt alignment**: Item / Qty / Rate / Amount column-a, amounts right-align, address balanced.
+- **Admin**: mela shop name, keezha ellaa menu (Reports, Sales, Products, Categories, Expenses, Bill History, Settings) scroll illaama theriyum.
+- **CSV + PDF**: Reports, Sales, Products, Categories, Expenses, Bill History - ellaathulayum.
+
+## 7. Update-a GitHub-la podu, pudhu APK edukka
+1. Pudhu zip-a extract panni, ulla irukkura files-a unga `cafe-billing` folder-la **Replace** pannunga (`.git` folder-a thodaadheenga).
+2. Terminal:
+   ```bash
+   git add .
+   git commit -m "Update: UPI QR, print-save, admin changes"
+   git push
+   ```
+3. GitHub → Actions → **Build Android APK** → **Run workflow** → Artifacts-la APK download.
+4. **First time mattum**: pazhaya APK-ku vera signing key irundhadhu. Adhanaala pazhaya app-a **uninstall** pannitu thaan pudhusa install aagum.
+   Uninstall pannum munnadi **Settings → Export backup** edunga, install aana piragu **Restore backup**.
+   Indha update-la fixed key add pannirukkom, so inimel varra updates uninstall illaama, data-vum pogaama install aagum.

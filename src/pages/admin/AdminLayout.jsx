@@ -1,7 +1,8 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, Link } from 'react-router-dom';
 import {
   LayoutDashboard, TrendingUp, Package, Tag, Wallet, Receipt, Settings, LogOut, ShoppingCart, Coffee,
 } from 'lucide-react';
+import { useStore } from '../../store.js';
 
 const links = [
   { to: '/admin', label: 'Reports', icon: LayoutDashboard, end: true },
@@ -14,18 +15,27 @@ const links = [
 ];
 
 export default function AdminLayout({ onLogout }) {
+  const { settings } = useStore();
   return (
     <div className="admin">
+      {/* phone: shop name first, then the menu below it */}
+      <header className="admin-top">
+        <div className="ttl"><Coffee size={20} /> <span>{settings.shopName}</span></div>
+        <div className="acts">
+          <Link to="/"><ShoppingCart size={14} /> Billing</Link>
+          <a href="#logout" onClick={(e) => { e.preventDefault(); onLogout(); }}><LogOut size={14} /> Logout</a>
+        </div>
+      </header>
       <nav className="side">
-        <div className="logo"><Coffee size={20} /> Admin</div>
+        <div className="logo"><Coffee size={20} /> {settings.shopName}</div>
         {links.map(({ to, label, icon: Icon, end }) => (
           <NavLink key={to} to={to} end={end} className={({ isActive }) => (isActive ? 'active' : '')}>
             <Icon size={18} /> {label}
           </NavLink>
         ))}
-        <div className="spacer" />
-        <NavLink to="/"><ShoppingCart size={18} /> Billing</NavLink>
-        <a href="#logout" onClick={(e) => { e.preventDefault(); onLogout(); }}>
+        <div className="spacer desk-only" />
+        <NavLink to="/" className="desk-only"><ShoppingCart size={18} /> Billing</NavLink>
+        <a href="#logout" className="desk-only" onClick={(e) => { e.preventDefault(); onLogout(); }}>
           <LogOut size={18} /> Logout
         </a>
       </nav>

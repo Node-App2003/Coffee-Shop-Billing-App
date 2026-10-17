@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Plus, Pencil, Trash2, Download } from 'lucide-react';
+import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { useStore, actions } from '../../store.js';
-import { money, num, dayKey, fmtDate, rangeText, exportCSV, stamp } from '../../utils.js';
+import { money, num, dayKey, fmtDate, rangeText, exportCSV, exportPDF, stamp } from '../../utils.js';
 import { expensesIn, sum } from '../../analytics.js';
 import RangePicker, { initialRange, useRange } from '../../components/RangePicker.jsx';
+import ExportButtons from '../../components/ExportButtons.jsx';
 import Modal from '../../components/Modal.jsx';
 
 export const EXPENSE_TYPES = ['Milk purchase', 'Coffee powder', 'Sugar', 'Staff expenses', 'Other shop expenses'];
@@ -22,6 +23,9 @@ export default function Expenses() {
   const total = sum(list, (e) => e.amount);
   const byType = EXPENSE_TYPES.map((t) => ({ t, v: sum(list.filter((e) => e.type === t), (e) => e.amount) }));
 
+  const head = ['Date', 'Type', 'Note', `Amount (${cur})`];
+  const rows = list.map((e) => [e.date, e.type, e.note, num(e.amount)]);
+
   const save = () => {
     if (!(Number(edit.amount) > 0)) return setError('Enter an amount greater than 0');
     if (!edit.date) return setError('Pick a date');
@@ -34,16 +38,19 @@ export default function Expenses() {
       <div className="page-title">
         Expenses
         <div className="row">
-          <button
-            className="btn sm"
+          <ExportButtons
             disabled={!list.length}
-            onClick={() =>
-              exportCSV(`expenses-${stamp()}.csv`, ['Date', 'Type', 'Note', `Amount (${cur})`],
-                list.map((e) => [e.date, e.type, e.note, num(e.amount)]))
+            onCsv={() => exportCSV(`expenses-${stamp()}.csv`, head, rows)}
+            onPdf={() =>
+              exportPDF({
+                filename: `expenses-${stamp()}.pdf`,
+                title: `${settings.shopName} - Expenses`,
+                subtitle: `${rangeText(range)} | Total ${cur}${num(total)}`,
+                head,
+                rows,
+              })
             }
-          >
-            <Download size={14} /> CSV
-          </button>
+          />
           <button className="btn primary" onClick={() => { setError(''); setEdit(blank()); }}>
             <Plus size={16} /> Add Expense
           </button>

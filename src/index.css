@@ -131,14 +131,22 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 
 /* ---------- receipt ---------- */
 .receipt {
-  font-family: 'Courier New', monospace; font-size: 13px; background: #fff; color: #000;
-  width: 100%; max-width: 320px; margin: 0 auto; padding: 14px; border: 1px dashed #bbb; border-radius: 6px;
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: 12.5px; line-height: 1.35; letter-spacing: 0; background: #fff; color: #000;
+  width: 100%; max-width: 340px; margin: 0 auto; padding: 14px 12px; border: 1px dashed #bbb; border-radius: 6px;
+  font-variant-numeric: tabular-nums;
 }
-.receipt .c { text-align: center; }
-.receipt .shop { font-size: 17px; font-weight: 700; }
+.receipt .c { text-align: center; white-space: pre-line; text-wrap: balance; }
+.receipt .shop { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
+.receipt .addr, .receipt .foot { font-size: 12px; }
 .receipt hr { border: 0; border-top: 1px dashed #000; margin: 8px 0; }
-.receipt .r { display: flex; justify-content: space-between; gap: 8px; }
-.receipt .b { font-weight: 700; }
+.receipt .kv { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 1px 0; }
+.receipt .kv > :last-child { text-align: right; white-space: nowrap; }
+.receipt .kv.total { font-size: 15px; font-weight: 700; padding-top: 4px; }
+.receipt .it { display: grid; grid-template-columns: minmax(0, 1fr) 24px 52px 64px; column-gap: 6px; padding: 2px 0; align-items: start; }
+.receipt .it.head { font-weight: 700; border-bottom: 1px solid #000; padding-bottom: 3px; margin-bottom: 2px; }
+.receipt .it .n { text-align: right; white-space: nowrap; }
+.receipt .it .nm { overflow-wrap: anywhere; }
 #print-root { display: none; }
 
 /* ---------- admin ---------- */
@@ -163,7 +171,12 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
 .tab { border: 1px solid var(--line); background: #fff; border-radius: 99px; padding: 7px 14px; font-weight: 600; font-size: 14px; }
 .tab.active { background: var(--brown); color: #fff; border-color: var(--brown); }
-.mobile-bar { display: none; }
+.admin-top { display: none; align-items: center; justify-content: space-between; gap: 8px; background: var(--brown-dark); color: #fff; padding: 10px 14px 4px; }
+.admin-top .ttl { font-weight: 800; font-size: 18px; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.admin-top .ttl span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-top .acts { display: flex; gap: 6px; flex-shrink: 0; }
+.admin-top .acts a { color: #f3e8de; text-decoration: none; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; padding: 6px 10px; border-radius: 99px; background: rgba(255, 255, 255, 0.12); }
+.side .logo { line-height: 1.2; }
 .login-wrap { height: 100%; display: flex; align-items: center; justify-content: center; padding: 16px; }
 .login { width: 100%; max-width: 360px; }
 .login h2 { color: var(--brown-dark); margin-bottom: 4px; }
@@ -181,10 +194,11 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
     align-items: center; justify-content: space-between; font-weight: 700; font-size: 16px; box-shadow: 0 6px 18px rgba(74, 51, 36, 0.35);
   }
   .products { padding-bottom: 90px; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
-  .admin { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-  .side { flex-direction: row; overflow-x: auto; padding: 8px; align-items: center; }
-  .side .logo, .side .spacer { display: none; }
-  .side a { white-space: nowrap; padding: 8px 12px; }
+  .admin { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; }
+  .admin-top { display: flex; }
+  .side { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 8px; overflow: visible; }
+  .side .logo, .side .desk-only { display: none; }
+  .side a { flex-direction: column; justify-content: center; text-align: center; gap: 4px; font-size: 12px; padding: 8px 2px; line-height: 1.2; }
   .admin-main { padding: 14px; }
   .pay-methods { grid-template-columns: repeat(2, 1fr); }
 }
@@ -205,3 +219,6 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .check input { width: 18px; height: 18px; accent-color: var(--brown); }
 .section { margin-top: 18px; }
 .section h3 { margin-bottom: 10px; }
+
+.qr-box { text-align: center; margin: 4px 0 12px; }
+.qr-box img { width: 220px; max-width: 70%; height: auto; border: 1px solid var(--line); border-radius: 12px; padding: 8px; background: #fff; }

@@ -1,5 +1,4 @@
 import { useSyncExternalStore } from 'react';
-import { dayKey } from './utils.js';
 
 const KEY = 'cafe-billing-v1';
 
@@ -46,7 +45,8 @@ const defaultSettings = {
   taxRate: 5,
   roundOff: true,
   footer: 'Thank you! Visit again ☕',
-  billPrefix: 'CB',
+  billPrefix: 'FB',
+  upiId: '',
 };
 
 const initial = () => ({
@@ -97,6 +97,9 @@ const subscribe = (l) => {
 };
 export const useStore = () => useSyncExternalStore(subscribe, () => state);
 export const getState = () => state;
+
+const billNumber = (prefix, year, seq) =>
+  `${(prefix || 'FB').trim()}-${year}-${String(seq).padStart(4, '0')}`;
 
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
 
@@ -172,15 +175,15 @@ export const actions = {
     return { ok: true };
   },
 
-  /* bills */
-  addBill({ items, totals, payments, paymentLabel }) {
+  /* bills: built as a draft first, stored only when the cashier taps Print */
+  previewBill({ items, totals, payments, paymentLabel }) {
     const now = new Date();
-    const dk = dayKey(now);
-    const seq = (state.seqs[dk] || 0) + 1;
     const s = state.settings;
-    const bill = {
+    const year = String(now.getFullYear());
+    const seq = (state.seqs[year] || 0) + 1;
+    return {
       id: uid(),
-      number: `${s.billPrefix || 'BILL'}-${dk.replace(/-/g, '')}-${String(seq).padStart(4, '0')}`,
+      number: billNumber(s.billPrefix, year, seq),
       createdAt: now.toISOString(),
       items,
       ...totals,
@@ -197,7 +200,17 @@ export const actions = {
         footer: s.footer,
       },
     };
-    commit({ ...state, bills: [bill, ...state.bills], seqs: { ...state.seqs, [dk]: seq } });
+  },
+  saveBill(draft) {
+    const now = new Date();
+    const year = String(now.getFullYear());
+    const seq = (state.seqs[year] || 0) + 1;
+    const bill = {
+      ...draft,
+      number: billNumber(state.settings.billPrefix, year, seq),
+      createdAt: now.toISOString(),
+    };
+    commit({ ...state, bills: [bill, ...state.bills], seqs: { ...state.seqs, [year]: seq } });
     return bill;
   },
 

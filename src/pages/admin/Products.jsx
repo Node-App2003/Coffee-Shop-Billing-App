@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Plus, Pencil, Trash2, Upload, Search } from 'lucide-react';
 import { useStore, actions } from '../../store.js';
-import { money, resizeImage } from '../../utils.js';
+import { money, num, resizeImage, exportCSV, exportPDF, stamp } from '../../utils.js';
+import ExportButtons from '../../components/ExportButtons.jsx';
 import Modal from '../../components/Modal.jsx';
 
 const blank = (categoryId) => ({ id: '', name: '', price: '', categoryId, image: '', enabled: true });
@@ -20,6 +21,9 @@ export default function Products() {
       (filter === 'all' || p.categoryId === filter) &&
       (!q.trim() || p.name.toLowerCase().includes(q.trim().toLowerCase()))
   );
+
+  const head = ['Name', 'Category', `Price (${cur})`, 'Status'];
+  const rows = list.map((p) => [p.name, catOf(p.categoryId)?.name || '', num(p.price), p.enabled ? 'Enabled' : 'Disabled']);
 
   const openAdd = () => {
     setError('');
@@ -58,7 +62,22 @@ export default function Products() {
     <>
       <div className="page-title">
         Products
-        <button className="btn primary" onClick={openAdd}><Plus size={16} /> Add Product</button>
+        <div className="row wrap">
+          <ExportButtons
+            disabled={!list.length}
+            onCsv={() => exportCSV(`products-${stamp()}.csv`, head, rows)}
+            onPdf={() =>
+              exportPDF({
+                filename: `products-${stamp()}.pdf`,
+                title: `${settings.shopName} - Products`,
+                subtitle: `${list.length} products`,
+                head,
+                rows,
+              })
+            }
+          />
+          <button className="btn primary" onClick={openAdd}><Plus size={16} /> Add Product</button>
+        </div>
       </div>
 
       <div className="row wrap" style={{ marginBottom: 14 }}>
