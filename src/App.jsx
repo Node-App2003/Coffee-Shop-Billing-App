@@ -10,6 +10,7 @@ import Products from './pages/admin/Products.jsx';
 import Categories from './pages/admin/Categories.jsx';
 import Expenses from './pages/admin/Expenses.jsx';
 import Bills from './pages/admin/Bills.jsx';
+import Workers from './pages/admin/Workers.jsx';
 import Settings from './pages/admin/Settings.jsx';
 
 // Browser: clean URLs (/admin). Android APK: hash URLs (more reliable inside the WebView).
@@ -50,6 +51,7 @@ export default function App() {
           <Route path="categories" element={<Categories />} />
           <Route path="expenses" element={<Expenses />} />
           <Route path="bills" element={<Bills />} />
+          <Route path="workers" element={<Workers />} />
           <Route path="settings" element={<Settings />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

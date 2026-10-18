@@ -54,6 +54,8 @@ const initial = () => ({
   products: defaultProducts,
   bills: [],
   expenses: [],
+  workers: [], // { id, name, role, salary }
+  salaryPayments: [], // { id, workerId, type: 'salary'|'advance', month, date, amount, deduction, ... }
   settings: defaultSettings,
   auth: { username: 'admin', passHash: null }, // null = default password (admin123)
   seqs: {},
@@ -227,6 +229,52 @@ export const actions = {
   },
   deleteExpense(id) {
     commit({ ...state, expenses: state.expenses.filter((x) => x.id !== id) });
+  },
+
+  /* workers */
+  saveWorker(w) {
+    const exists = state.workers.some((x) => x.id === w.id);
+    const clean = { ...w, name: w.name.trim(), salary: Number(w.salary) || 0 };
+    commit({
+      ...state,
+      workers: exists
+        ? state.workers.map((x) => (x.id === w.id ? clean : x))
+        : [...state.workers, { ...clean, id: uid() }],
+    });
+  },
+  deleteWorker(id) {
+    // old salary/advance records (and their expense entries) are kept for the accounts
+    commit({ ...state, workers: state.workers.filter((x) => x.id !== id) });
+  },
+  // Salary or advance: stored as a payment AND added to Expenses (Staff expenses) automatically.
+  // For salary, `deduction` is the advance being adjusted, so only the net cash is an expense
+  // (the advance was already counted as an expense when it was given).
+  addWorkerPayment({ workerId, type, amount, deduction = 0, month, date, note = '' }) {
+    const w = state.workers.find((x) => x.id === workerId);
+    if (!w) return;
+    const id = uid();
+    const net = Math.round((Number(amount) + Number.EPSILON) * 100) / 100;
+    const label = type === 'advance' ? `Advance - ${w.name}` : `Salary - ${w.name} (${month})`;
+    const expenseId = net > 0 ? uid() : null;
+    const payment = {
+      id, workerId, workerName: w.name, role: w.role, type, month, date,
+      gross: type === 'salary' ? w.salary : 0,
+      deduction: Number(deduction) || 0,
+      amount: net, note, expenseId,
+    };
+    const expenses = expenseId
+      ? [{ id: expenseId, date, type: 'Staff expenses', note: note ? `${label} - ${note}` : label, amount: net, paymentId: id }, ...state.expenses]
+      : state.expenses;
+    commit({ ...state, salaryPayments: [payment, ...state.salaryPayments], expenses });
+  },
+  deleteWorkerPayment(id) {
+    const pay = state.salaryPayments.find((x) => x.id === id);
+    if (!pay) return;
+    commit({
+      ...state,
+      salaryPayments: state.salaryPayments.filter((x) => x.id !== id),
+      expenses: state.expenses.filter((x) => x.id !== pay.expenseId),
+    });
   },
 
   /* settings + account */

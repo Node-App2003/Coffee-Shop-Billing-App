@@ -1,6 +1,6 @@
 import { NavLink, Outlet, Link } from 'react-router-dom';
 import {
-  LayoutDashboard, TrendingUp, Package, Tag, Wallet, Receipt, Settings, LogOut, ShoppingCart, Coffee,
+  LayoutDashboard, TrendingUp, Package, Tag, Wallet, Receipt, Settings, Users, LogOut, ShoppingCart, Coffee,
 } from 'lucide-react';
 import { useStore } from '../../store.js';
 
@@ -11,6 +11,7 @@ const links = [
   { to: '/admin/categories', label: 'Categories', icon: Tag },
   { to: '/admin/expenses', label: 'Expenses', icon: Wallet },
   { to: '/admin/bills', label: 'Bill History', icon: Receipt },
+  { to: '/admin/workers', label: 'Workers', icon: Users },
   { to: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 

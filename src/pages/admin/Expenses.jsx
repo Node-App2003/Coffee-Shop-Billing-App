@@ -81,10 +81,16 @@ export default function Expenses() {
                 <td>{e.note}</td>
                 <td className="num"><b>{money(e.amount, cur)}</b></td>
                 <td className="right" style={{ whiteSpace: 'nowrap' }}>
-                  <button className="btn sm icon" onClick={() => { setError(''); setEdit({ ...e }); }}><Pencil size={14} /></button>{' '}
-                  <button className="btn sm icon danger" onClick={() => window.confirm('Delete this expense?') && actions.deleteExpense(e.id)}>
-                    <Trash2 size={14} />
-                  </button>
+                  {e.paymentId ? (
+                    <span className="badge" title="Workers page-la maathalaam / delete pannalaam">Workers</span>
+                  ) : (
+                    <>
+                      <button className="btn sm icon" onClick={() => { setError(''); setEdit({ ...e }); }}><Pencil size={14} /></button>{' '}
+                      <button className="btn sm icon danger" onClick={() => window.confirm('Delete this expense?') && actions.deleteExpense(e.id)}>
+                        <Trash2 size={14} />
+                      </button>
+                    </>
+                  )}
                 </td>
               </tr>
             ))}
