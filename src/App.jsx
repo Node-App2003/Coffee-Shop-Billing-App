@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { actions, getState } from './store.js';
+import Modal from './components/Modal.jsx';
+import { QuickLoginForm } from './components/QuickLogin.jsx';
 import Billing from './pages/Billing.jsx';
 import AdminLayout from './pages/admin/AdminLayout.jsx';
 import Login from './pages/admin/Login.jsx';
@@ -19,23 +22,41 @@ const SESSION_KEY = 'cafe-admin-session';
 
 function AdminGate() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem(SESSION_KEY) === '1');
+  const [offerQuick, setOfferQuick] = useState(false);
   if (!authed) {
     return (
       <Login
-        onSuccess={() => {
+        onSuccess={(method) => {
           sessionStorage.setItem(SESSION_KEY, '1');
           setAuthed(true);
+          // right after the first password login, offer PIN + fingerprint (only once)
+          const a = getState().auth;
+          if (method === 'password' && !a.pinHash && !a.quickPrompted) setOfferQuick(true);
         }}
       />
     );
   }
+  const closeOffer = () => {
+    actions.markQuickPrompted();
+    setOfferQuick(false);
+  };
   return (
-    <AdminLayout
-      onLogout={() => {
-        sessionStorage.removeItem(SESSION_KEY);
-        setAuthed(false);
-      }}
-    />
+    <>
+      <AdminLayout
+        onLogout={() => {
+          sessionStorage.removeItem(SESSION_KEY);
+          setAuthed(false);
+        }}
+      />
+      {offerQuick && (
+        <Modal title="PIN + Fingerprint set pannalaamaa?">
+          <p className="muted small" style={{ marginTop: 0 }}>
+            Inimel password type pannaama, PIN or fingerprint-la admin open pannalaam. Later Settings-layum maathalaam.
+          </p>
+          <QuickLoginForm onDone={closeOffer} onSkip={closeOffer} />
+        </Modal>
+      )}
+    </>
   );
 }
 

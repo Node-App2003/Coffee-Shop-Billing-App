@@ -222,3 +222,11 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 
 .qr-box { text-align: center; margin: 4px 0 12px; }
 .qr-box img { width: 220px; max-width: 70%; height: auto; border: 1px solid var(--line); border-radius: 12px; padding: 8px; background: #fff; }
+
+/* ---------- PIN pad ---------- */
+.pin-dots { display: flex; justify-content: center; gap: 14px; margin: 14px 0 6px; }
+.pin-dots span { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--brown); }
+.pin-dots span.on { background: var(--brown); }
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 8px 0 12px; }
+.keypad button { height: 58px; border-radius: 14px; border: 1px solid var(--line); background: #fff; font-size: 22px; font-weight: 600; color: var(--brown-dark); display: flex; align-items: center; justify-content: center; }
+.keypad button:active { background: var(--brown-light); }

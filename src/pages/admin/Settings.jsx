@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Save, Download, Upload } from 'lucide-react';
 import { useStore, actions, verifyLogin } from '../../store.js';
 import { saveText, stamp } from '../../utils.js';
+import { QuickLoginCard } from '../../components/QuickLogin.jsx';
 
 export default function Settings() {
   const { settings, auth } = useStore();
@@ -124,6 +125,8 @@ export default function Settings() {
             {accMsg.text && <div className={accMsg.type === 'ok' ? 'badge green' : 'err'} style={{ marginBottom: 10 }}>{accMsg.text}</div>}
             <button className="btn primary" onClick={saveAccount}>Update login</button>
           </div>
+
+          <QuickLoginCard />
 
           <div className="card">
             <h3>Backup</h3>

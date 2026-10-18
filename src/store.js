@@ -57,7 +57,8 @@ const initial = () => ({
   workers: [], // { id, name, role, salary }
   salaryPayments: [], // { id, workerId, type: 'salary'|'advance', month, date, amount, deduction, ... }
   settings: defaultSettings,
-  auth: { username: 'admin', passHash: null }, // null = default password (admin123)
+  // passHash null = default password (admin123). PIN + fingerprint are optional quick-login after the first password login.
+  auth: { username: 'admin', passHash: null, pinHash: null, pinLen: 0, pinFails: 0, biometric: false, quickPrompted: false },
   seqs: {},
 });
 
@@ -133,8 +134,24 @@ async function hashPassword(pw, alg) {
 export async function verifyLogin(username, password) {
   const a = state.auth;
   if (username.trim().toLowerCase() !== a.username.toLowerCase()) return false;
-  if (!a.passHash) return password === 'admin123';
-  return (await hashPassword(password, a.passHash.split(':')[0])) === a.passHash;
+  const ok = !a.passHash
+    ? password === 'admin123'
+    : (await hashPassword(password, a.passHash.split(':')[0])) === a.passHash;
+  if (ok && a.pinFails) commit({ ...state, auth: { ...state.auth, pinFails: 0 } }); // password unlocks the PIN again
+  return ok;
+}
+
+export const PIN_MAX_FAILS = 5;
+
+// 5 wrong PINs in a row => PIN is locked until the admin logs in with the password once.
+export async function verifyPin(pin) {
+  const a = state.auth;
+  if (!a.pinHash) return { ok: false, locked: false, left: 0 };
+  if ((a.pinFails || 0) >= PIN_MAX_FAILS) return { ok: false, locked: true, left: 0 };
+  const ok = (await hashPassword(`pin:${pin}`, a.pinHash.split(':')[0])) === a.pinHash;
+  const fails = ok ? 0 : (a.pinFails || 0) + 1;
+  commit({ ...state, auth: { ...state.auth, pinFails: fails } });
+  return { ok, locked: !ok && fails >= PIN_MAX_FAILS, left: Math.max(0, PIN_MAX_FAILS - fails) };
 }
 
 /* ---------- actions ---------- */
@@ -283,7 +300,20 @@ export const actions = {
   },
   async setCredentials(username, newPassword) {
     const passHash = newPassword ? await hashPassword(newPassword) : state.auth.passHash;
-    commit({ ...state, auth: { username: username.trim(), passHash } });
+    commit({ ...state, auth: { ...state.auth, username: username.trim(), passHash } });
+  },
+  async setPin(pin) {
+    const pinHash = await hashPassword(`pin:${pin}`);
+    commit({ ...state, auth: { ...state.auth, pinHash, pinLen: String(pin).length, pinFails: 0 } });
+  },
+  setBiometric(on) {
+    commit({ ...state, auth: { ...state.auth, biometric: !!on } });
+  },
+  disableQuickLogin() {
+    commit({ ...state, auth: { ...state.auth, pinHash: null, pinLen: 0, pinFails: 0, biometric: false } });
+  },
+  markQuickPrompted() {
+    if (!state.auth.quickPrompted) commit({ ...state, auth: { ...state.auth, quickPrompted: true } });
   },
 
   /* backup */
