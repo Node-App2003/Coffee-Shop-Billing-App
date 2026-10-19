@@ -52,6 +52,11 @@ export const fmtDateTime = (d) =>
     minute: '2-digit',
     hour12: true,
   });
+// dd-mm-yyyy (a '/' cannot be used inside a file name)
+export const dmy = (d = new Date()) => {
+  const x = new Date(d);
+  return `${pad(x.getDate())}-${pad(x.getMonth() + 1)}-${x.getFullYear()}`;
+};
 export const stamp = () => {
   const n = new Date();
   return `${dayKey(n).replace(/-/g, '')}-${pad(n.getHours())}${pad(n.getMinutes())}`;
@@ -204,7 +209,7 @@ export async function shareReceiptPdf(bill) {
   wrap(pdfText(s.shopName), W).forEach((t) => L.push(center(t)));
   if (s.address) wrap(pdfText(s.address), W).forEach((t) => L.push(center(t)));
   if (s.phone) L.push(center(`Ph: ${pdfText(s.phone)}`));
-  L.push(line, lr('Bill No', bill.number), lr('Date', pdfText(fmtDateTime(bill.createdAt))), line);
+  L.push(line, `Bill No : ${bill.number}`, `Date    : ${pdfText(fmtDateTime(bill.createdAt))}`, line);
   L.push('Item'.padEnd(16) + ' ' + 'Qty'.padStart(3) + ' ' + 'Rate'.padStart(8) + ' ' + 'Amount'.padStart(9), line);
   bill.items.forEach((i) => L.push(...itemLines(i)));
   L.push(line, lr('Subtotal', rs(bill.subtotal)));

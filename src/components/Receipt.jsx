@@ -10,8 +10,8 @@ export function ReceiptBody({ bill }) {
       {s.address && <div className="c addr">{s.address}</div>}
       {s.phone && <div className="c">Ph: {s.phone}</div>}
       <hr />
-      <div className="kv"><span>Bill No</span><b>{bill.number}</b></div>
-      <div className="kv"><span>Date</span><span>{fmtDateTime(bill.createdAt)}</span></div>
+      <div className="kv left"><span>Bill No :</span><b>{bill.number}</b></div>
+      <div className="kv left"><span>Date&nbsp;&nbsp;&nbsp;:</span><span>{fmtDateTime(bill.createdAt)}</span></div>
       <hr />
       <div className="it head">
         <span>Item</span><span className="n">Qty</span><span className="n">Rate</span><span className="n">Amount</span>

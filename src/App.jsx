@@ -29,7 +29,7 @@ function AdminGate() {
         onSuccess={(method) => {
           sessionStorage.setItem(SESSION_KEY, '1');
           setAuthed(true);
-          // right after the first password login, offer PIN + fingerprint (only once)
+          // right after the first password login, offer a PIN (only once)
           const a = getState().auth;
           if (method === 'password' && !a.pinHash && !a.quickPrompted) setOfferQuick(true);
         }}
@@ -49,9 +49,9 @@ function AdminGate() {
         }}
       />
       {offerQuick && (
-        <Modal title="PIN + Fingerprint set pannalaamaa?">
+        <Modal title="PIN set pannalaamaa?">
           <p className="muted small" style={{ marginTop: 0 }}>
-            Inimel password type pannaama, PIN or fingerprint-la admin open pannalaam. Later Settings-layum maathalaam.
+            Inimel password type pannaama, PIN-la admin open pannalaam. Later Settings-layum maathalaam.
           </p>
           <QuickLoginForm onDone={closeOffer} onSkip={closeOffer} />
         </Modal>

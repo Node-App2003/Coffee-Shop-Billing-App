@@ -142,6 +142,8 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .receipt hr { border: 0; border-top: 1px dashed #000; margin: 8px 0; }
 .receipt .kv { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 1px 0; }
 .receipt .kv > :last-child { text-align: right; white-space: nowrap; }
+.receipt .kv.left { justify-content: flex-start; gap: 8px; }
+.receipt .kv.left > :last-child { text-align: left; white-space: normal; }
 .receipt .kv.total { font-size: 15px; font-weight: 700; padding-top: 4px; }
 .receipt .it { display: grid; grid-template-columns: minmax(0, 1fr) 24px 52px 64px; column-gap: 6px; padding: 2px 0; align-items: start; }
 .receipt .it.head { font-weight: 700; border-bottom: 1px solid #000; padding-bottom: 3px; margin-bottom: 2px; }

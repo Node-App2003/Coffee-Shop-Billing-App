@@ -31,12 +31,6 @@ jobs:
           if [ ! -d android ]; then npx cap add android; fi
           npx cap sync android
 
-      - name: Make sure the biometric permission is in the manifest
-        run: |
-          f=android/app/src/main/AndroidManifest.xml
-          grep -q USE_BIOMETRIC "$f" || sed -i 's#</manifest>#    <uses-permission android:name="android.permission.USE_BIOMETRIC" />\n</manifest>#' "$f"
-          grep -n "uses-permission" "$f"
-
       - name: Use the fixed signing key (so every new APK installs over the old one)
         run: |
           mkdir -p ~/.android

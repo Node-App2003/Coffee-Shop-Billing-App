@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Save, Download, Upload } from 'lucide-react';
 import { useStore, actions, verifyLogin } from '../../store.js';
-import { saveText, stamp } from '../../utils.js';
+import { saveText, dmy } from '../../utils.js';
 import { QuickLoginCard } from '../../components/QuickLogin.jsx';
 
 export default function Settings() {
@@ -134,7 +134,7 @@ export default function Settings() {
               All data is stored on this device. Take a backup regularly - it also lets you move to a new phone.
             </p>
             <div className="row wrap">
-              <button className="btn" onClick={() => saveText(`cafe-backup-${stamp()}.json`, actions.exportBackup(), 'application/json')}>
+              <button className="btn" onClick={() => saveText(`cafe-backup-${dmy()}.json`, actions.exportBackup(), 'application/json')}>
                 <Download size={16} /> Export backup
               </button>
               <label className="btn" style={{ cursor: 'pointer' }}>

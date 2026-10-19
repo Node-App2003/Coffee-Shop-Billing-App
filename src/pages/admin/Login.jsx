@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Lock, Fingerprint, Delete } from 'lucide-react';
+import { Lock, Delete } from 'lucide-react';
 import { verifyLogin, verifyPin, useStore, PIN_MAX_FAILS } from '../../store.js';
-import { biometricAvailable, biometricPrompt } from '../../biometric.js';
 
-// onSuccess(method) - method is 'password', 'pin' or 'bio'
+// onSuccess(method) - method is 'password' or 'pin'
 export default function Login({ onSuccess }) {
   const { auth } = useStore();
   const pinLen = auth.pinLen || 4;
@@ -18,25 +17,6 @@ export default function Login({ onSuccess }) {
     auth.pinHash && pinLocked ? 'Rombha thappa PIN. Password-a use pannunga.' : ''
   );
   const [busy, setBusy] = useState(false);
-  const [canBio, setCanBio] = useState(false);
-  const asked = useRef(false);
-
-  const tryBio = async () => {
-    setError('');
-    if (await biometricPrompt('Admin login')) onSuccess('bio');
-    else setError('Fingerprint match aagala. PIN use pannunga.');
-  };
-
-  // fingerprint prompt opens by itself when the PIN screen shows
-  useEffect(() => {
-    if (!auth.pinHash || !auth.biometric || asked.current) return;
-    asked.current = true;
-    biometricAvailable().then((ok) => {
-      setCanBio(ok);
-      if (ok) tryBio();
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const submitPin = async (value) => {
     setBusy(true);
@@ -88,9 +68,7 @@ export default function Login({ onSuccess }) {
             {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((d) => (
               <button key={d} onClick={() => digit(d)}>{d}</button>
             ))}
-            {auth.biometric && canBio ? (
-              <button onClick={tryBio} title="Fingerprint"><Fingerprint size={22} /></button>
-            ) : <span />}
+            <span />
             <button onClick={() => digit('0')}>0</button>
             <button onClick={() => setPin((p) => p.slice(0, -1))} title="Delete"><Delete size={22} /></button>
           </div>
@@ -129,7 +107,7 @@ export default function Login({ onSuccess }) {
         </button>
         {!auth.passHash && (
           <p className="muted small" style={{ marginBottom: 0 }}>
-            First time? Username <b>admin</b>, password <b>admin123</b>. Login pannina piragu PIN / fingerprint set pannalaam.
+            First time? Username <b>admin</b>, password <b>admin123</b>. Login pannina piragu PIN set pannalaam.
           </p>
         )}
         {auth.pinHash && !pinLocked && (

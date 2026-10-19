@@ -57,8 +57,8 @@ const initial = () => ({
   workers: [], // { id, name, role, salary }
   salaryPayments: [], // { id, workerId, type: 'salary'|'advance', month, date, amount, deduction, ... }
   settings: defaultSettings,
-  // passHash null = default password (admin123). PIN + fingerprint are optional quick-login after the first password login.
-  auth: { username: 'admin', passHash: null, pinHash: null, pinLen: 0, pinFails: 0, biometric: false, quickPrompted: false },
+  // passHash null = default password (admin123). PIN is an optional quick-login after the first password login.
+  auth: { username: 'admin', passHash: null, pinHash: null, pinLen: 0, pinFails: 0, quickPrompted: false },
   seqs: {},
 });
 
@@ -306,11 +306,8 @@ export const actions = {
     const pinHash = await hashPassword(`pin:${pin}`);
     commit({ ...state, auth: { ...state.auth, pinHash, pinLen: String(pin).length, pinFails: 0 } });
   },
-  setBiometric(on) {
-    commit({ ...state, auth: { ...state.auth, biometric: !!on } });
-  },
   disableQuickLogin() {
-    commit({ ...state, auth: { ...state.auth, pinHash: null, pinLen: 0, pinFails: 0, biometric: false } });
+    commit({ ...state, auth: { ...state.auth, pinHash: null, pinLen: 0, pinFails: 0 } });
   },
   markQuickPrompted() {
     if (!state.auth.quickPrompted) commit({ ...state, auth: { ...state.auth, quickPrompted: true } });
