@@ -7,14 +7,25 @@ async function plugin() {
   return m.BiometricAuth;
 }
 
-export async function biometricAvailable() {
-  if (!Capacitor.isNativePlatform()) return false;
+// { ok, reason } - reason explains why fingerprint cannot be used (shown in Settings)
+export async function biometricStatus() {
+  if (!Capacitor.isNativePlatform()) {
+    return { ok: false, reason: 'Browser-la fingerprint work aagaadhu. Installed APK-la try pannunga.' };
+  }
   try {
     const info = await (await plugin()).checkBiometry();
-    return !!info.isAvailable;
-  } catch {
-    return false;
+    if (info.isAvailable) return { ok: true, reason: '' };
+    return {
+      ok: false,
+      reason: `Phone-la fingerprint ready illa (${info.reason || info.code || 'not enrolled'}). Phone Settings → Security → Fingerprint-la viral add pannunga.`,
+    };
+  } catch (e) {
+    return { ok: false, reason: `Fingerprint plugin load aagala: ${e?.message || e}` };
   }
+}
+
+export async function biometricAvailable() {
+  return (await biometricStatus()).ok;
 }
 
 // true = the phone confirmed the fingerprint, false = failed / cancelled

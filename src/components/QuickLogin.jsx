@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Fingerprint, KeyRound } from 'lucide-react';
 import { useStore, actions } from '../store.js';
-import { biometricAvailable, biometricPrompt } from '../biometric.js';
+import { biometricStatus, biometricPrompt } from '../biometric.js';
 
 // Form: choose a PIN (4-6 digits) and optionally turn on fingerprint.
 export function QuickLoginForm({ onDone, onSkip }) {
@@ -9,12 +9,12 @@ export function QuickLoginForm({ onDone, onSkip }) {
   const [pin, setPin] = useState('');
   const [confirm, setConfirm] = useState('');
   const [bio, setBio] = useState(auth.biometric);
-  const [canBio, setCanBio] = useState(false);
+  const [bioInfo, setBioInfo] = useState({ ok: false, reason: 'Checking fingerprint...' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    biometricAvailable().then(setCanBio);
+    biometricStatus().then(setBioInfo);
   }, []);
 
   const save = async () => {
@@ -44,14 +44,11 @@ export function QuickLoginForm({ onDone, onSkip }) {
         <input className="input" type="password" inputMode="numeric" maxLength={6} autoComplete="off"
           value={confirm} onChange={(e) => setConfirm(e.target.value.replace(/\D/g, ''))} />
       </div>
-      {canBio ? (
-        <label className="check">
-          <input type="checkbox" checked={bio} onChange={(e) => setBio(e.target.checked)} />
-          <Fingerprint size={18} /> Fingerprint login-um on pannu
-        </label>
-      ) : (
-        <p className="muted small">Fingerprint: installed Android app-la, phone-la fingerprint set pannirundha mattum varum.</p>
-      )}
+      <label className="check" style={{ opacity: bioInfo.ok ? 1 : 0.55 }}>
+        <input type="checkbox" disabled={!bioInfo.ok} checked={bio && bioInfo.ok} onChange={(e) => setBio(e.target.checked)} />
+        <Fingerprint size={18} /> Fingerprint login-um on pannu
+      </label>
+      {!bioInfo.ok && <p className="muted small" style={{ marginTop: -6 }}>{bioInfo.reason}</p>}
       {error && <div className="err" style={{ marginBottom: 8 }}>{error}</div>}
       <div className="actions">
         {onSkip && <button className="btn" onClick={onSkip}>Skip</button>}
@@ -65,6 +62,21 @@ export function QuickLoginForm({ onDone, onSkip }) {
 export function QuickLoginCard() {
   const { auth } = useStore();
   const [editing, setEditing] = useState(false);
+  const [bioInfo, setBioInfo] = useState({ ok: false, reason: 'Checking fingerprint...' });
+  const [msg, setMsg] = useState('');
+
+  useEffect(() => {
+    biometricStatus().then(setBioInfo);
+  }, []);
+
+  // one tap: fingerprint on / off (PIN is already set)
+  const toggleBio = async () => {
+    setMsg('');
+    if (!auth.biometric && !(await biometricPrompt('Fingerprint on panna unga viral vaiyunga'))) {
+      return setMsg('Fingerprint confirm aagala. Thirumba try pannunga.');
+    }
+    actions.setBiometric(!auth.biometric);
+  };
 
   return (
     <div className="card">
@@ -86,6 +98,14 @@ export function QuickLoginCard() {
               Fingerprint {auth.biometric ? 'on' : 'off'}
             </span>
           </div>
+          {bioInfo.ok ? (
+            <button className="btn primary" style={{ marginBottom: 10 }} onClick={toggleBio}>
+              <Fingerprint size={16} /> {auth.biometric ? 'Turn off fingerprint' : 'Turn on fingerprint'}
+            </button>
+          ) : (
+            <p className="muted small" style={{ marginTop: 0 }}>{bioInfo.reason}</p>
+          )}
+          {msg && <div className="err" style={{ marginBottom: 8 }}>{msg}</div>}
           <div className="row wrap">
             <button className="btn" onClick={() => setEditing(true)}>Change PIN / Fingerprint</button>
             <button
