@@ -1,6 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import { getState } from './store.js';
 
 export const isNative = () => Capacitor.isNativePlatform();
 
@@ -167,9 +168,6 @@ export async function exportPDF({ filename, title, subtitle = '', head, rows }) 
 }
 
 /* ---------- bill printing ---------- */
-const W = 40;
-const center = (t) => ' '.repeat(Math.max(0, Math.floor((W - t.length) / 2))) + t;
-const lr = (l, r) => l + ' '.repeat(Math.max(1, W - l.length - r.length)) + r;
 const rs = (n) => `Rs.${num(n)}`;
 
 // word-wrap plain text into lines of at most `width` characters (keeps manual line breaks)
@@ -194,47 +192,78 @@ function wrap(text, width) {
   return out;
 }
 
-// Item table: name(16) qty(3) rate(8) amount(9)  => 16+1+3+1+8+1+9 = 39 columns
-function itemLines(i) {
-  const names = wrap(pdfText(i.name), 16);
-  const cols = `${String(i.qty).padStart(3)} ${num(i.price).padStart(8)} ${num(i.qty * i.price).padStart(9)}`;
-  return names.map((n, idx) => (idx === 0 ? n.padEnd(16) + ' ' + cols : n));
+// The receipt as plain monospaced lines: [{ t: text, b: bold? }].
+// W = characters per line (40 for the PDF, 32 for 58mm and 48 for 80mm Bluetooth printers).
+export function receiptLines(bill, W = 40) {
+  const s = bill.snapshot;
+  const center = (t) => ' '.repeat(Math.max(0, Math.floor((W - t.length) / 2))) + t;
+  const lr = (l, r) => l + ' '.repeat(Math.max(1, W - l.length - r.length)) + r;
+  const line = '-'.repeat(W);
+  const qW = 3;
+  const rW = W >= 40 ? 8 : 7;
+  const aW = W >= 40 ? 9 : 8;
+  const nW = W - (qW + rW + aW + 3) - 1; // name column
+  const L = [];
+  const add = (t, b = false) => L.push({ t, b });
+
+  wrap(pdfText(s.shopName), W).forEach((t) => add(center(t), true));
+  if (s.address) wrap(pdfText(s.address), W).forEach((t) => add(center(t)));
+  if (s.phone) add(center(`Ph: ${pdfText(s.phone)}`));
+  if (s.gstin) add(center(`GSTIN: ${pdfText(s.gstin)}`));
+  add(line);
+  add(`Bill No : ${bill.number}`);
+  add(`Date    : ${pdfText(fmtDateTime(bill.createdAt))}`);
+  add(line);
+  add('Item'.padEnd(nW) + ' ' + 'Qty'.padStart(qW) + ' ' + 'Rate'.padStart(rW) + ' ' + 'Amount'.padStart(aW), true);
+  add(line);
+  bill.items.forEach((i) => {
+    const cols = `${String(i.qty).padStart(qW)} ${num(i.price).padStart(rW)} ${num(i.qty * i.price).padStart(aW)}`;
+    wrap(pdfText(i.name), nW).forEach((n, idx) => add(idx === 0 ? n.padEnd(nW) + ' ' + cols : n));
+  });
+  add(line);
+  add(lr('Subtotal', rs(bill.subtotal)));
+  if (bill.taxAmount) add(lr(`${pdfText(bill.taxName)} (${bill.taxRate}%)`, rs(bill.taxAmount)));
+  if (bill.roundOff) add(lr('Round off', `${bill.roundOff > 0 ? '+' : ''}${num(bill.roundOff)}`));
+  add(line);
+  add(lr('TOTAL', rs(bill.total)), true);
+  add(line);
+  bill.payments.forEach((p) => add(lr(`Paid by ${p.method}`, rs(p.amount))));
+  if (s.footer) {
+    add(line);
+    wrap(pdfText(s.footer), W).forEach((t) => add(center(t)));
+  }
+  return L;
 }
 
 export async function shareReceiptPdf(bill) {
   const { jsPDF } = await import('jspdf');
-  const s = bill.snapshot;
-  const L = [];
-  const line = '-'.repeat(W);
-  wrap(pdfText(s.shopName), W).forEach((t) => L.push(center(t)));
-  if (s.address) wrap(pdfText(s.address), W).forEach((t) => L.push(center(t)));
-  if (s.phone) L.push(center(`Ph: ${pdfText(s.phone)}`));
-  L.push(line, `Bill No : ${bill.number}`, `Date    : ${pdfText(fmtDateTime(bill.createdAt))}`, line);
-  L.push('Item'.padEnd(16) + ' ' + 'Qty'.padStart(3) + ' ' + 'Rate'.padStart(8) + ' ' + 'Amount'.padStart(9), line);
-  bill.items.forEach((i) => L.push(...itemLines(i)));
-  L.push(line, lr('Subtotal', rs(bill.subtotal)));
-  if (bill.taxAmount) L.push(lr(`${pdfText(bill.taxName)} (${bill.taxRate}%)`, rs(bill.taxAmount)));
-  if (bill.roundOff) L.push(lr('Round off', `${bill.roundOff > 0 ? '+' : ''}${num(bill.roundOff)}`));
-  L.push(line, lr('TOTAL', rs(bill.total)), line);
-  bill.payments.forEach((p) => L.push(lr(`Paid by ${p.method}`, rs(p.amount))));
-  if (s.footer) {
-    L.push(line);
-    wrap(pdfText(s.footer), W).forEach((t) => L.push(center(t)));
-  }
+  const L = receiptLines(bill, 40);
   const lh = 3.7;
   const h = 14 + L.length * lh;
   const doc = new jsPDF({ unit: 'mm', format: [80, h] });
   doc.setFont('courier', 'normal');
   doc.setFontSize(8);
-  L.forEach((t, idx) => doc.text(t, 5, 8 + idx * lh));
+  L.forEach((l, idx) => doc.text(l.t, 5, 8 + idx * lh));
   await savePdf(doc, `${bill.number}.pdf`);
 }
 
-// Browser: system print dialog. Android WebView has no reliable window.print(),
-// so the APK shares a receipt PDF (print it via the Android print service / printer app).
+// Browser: system print dialog.
+// Android APK: if a Bluetooth printer is chosen in Settings -> prints directly on it,
+// otherwise (or if you agree after an error) shares a receipt PDF.
 export async function printBill(bill) {
-  if (isNative()) return shareReceiptPdf(bill);
-  window.print();
+  if (!isNative()) return window.print();
+  const { printerAddress, printerPaper } = getState().settings;
+  if (printerAddress) {
+    try {
+      const bt = await import('./bluetoothPrinter.js');
+      await bt.printLines(printerAddress, receiptLines(bill, printerPaper === '80' ? 48 : 32));
+      return;
+    } catch (e) {
+      const why = e?.message || 'printer connect aagala';
+      if (!window.confirm(`Bluetooth print aagala (${why}).\n\nPDF-a share pannalaama?`)) return;
+    }
+  }
+  return shareReceiptPdf(bill);
 }
 
 /* ---------- images ---------- */

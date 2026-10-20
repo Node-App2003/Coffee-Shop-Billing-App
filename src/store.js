@@ -47,6 +47,10 @@ const defaultSettings = {
   footer: 'Thank you! Visit again ☕',
   billPrefix: 'FB',
   upiId: '',
+  gstin: '',
+  printerAddress: '', // Bluetooth thermal printer (APK only)
+  printerName: '',
+  printerPaper: '58', // '58' mm => 32 chars/line, '80' mm => 48 chars/line
 };
 
 const initial = () => ({
@@ -60,6 +64,8 @@ const initial = () => ({
   // passHash null = default password (admin123). PIN is an optional quick-login after the first password login.
   auth: { username: 'admin', passHash: null, pinHash: null, pinLen: 0, pinFails: 0, quickPrompted: false },
   seqs: {},
+  dayClosings: [], // daily closing reports
+  lastBackupAt: null,
 });
 
 /* ---------- persistence ---------- */
@@ -215,6 +221,7 @@ export const actions = {
         shopName: s.shopName,
         address: s.address,
         phone: s.phone,
+        gstin: s.gstin,
         currency: s.currency,
         footer: s.footer,
       },
@@ -292,6 +299,19 @@ export const actions = {
       salaryPayments: state.salaryPayments.filter((x) => x.id !== id),
       expenses: state.expenses.filter((x) => x.id !== pay.expenseId),
     });
+  },
+
+  /* daily closing: one record per date (closing again the same day replaces it) */
+  saveDayClosing(c) {
+    const rec = { ...c, id: uid(), closedAt: new Date().toISOString() };
+    commit({ ...state, dayClosings: [rec, ...state.dayClosings.filter((x) => x.date !== c.date)] });
+    return rec;
+  },
+  deleteDayClosing(id) {
+    commit({ ...state, dayClosings: state.dayClosings.filter((x) => x.id !== id) });
+  },
+  markBackup() {
+    commit({ ...state, lastBackupAt: new Date().toISOString() });
   },
 
   /* settings + account */

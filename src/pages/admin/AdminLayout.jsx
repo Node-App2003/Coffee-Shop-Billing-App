@@ -1,14 +1,16 @@
 import { NavLink, Outlet, Link } from 'react-router-dom';
 import {
-  LayoutDashboard, TrendingUp, Package, Tag, Wallet, Receipt, Settings, Users, LogOut, ShoppingCart, Coffee,
+  LayoutDashboard, TrendingUp, Package, Tag, Wallet, Receipt, Settings, Users, LogOut, ShoppingCart, Coffee, ClipboardCheck,
 } from 'lucide-react';
 import { useStore } from '../../store.js';
+import BackupBanner from '../../components/BackupBanner.jsx';
 
 const links = [
   { to: '/admin', label: 'Reports', icon: LayoutDashboard, end: true },
   { to: '/admin/sales', label: 'Sales', icon: TrendingUp },
   { to: '/admin/products', label: 'Products', icon: Package },
   { to: '/admin/categories', label: 'Categories', icon: Tag },
+  { to: '/admin/closing', label: 'Close Day', icon: ClipboardCheck },
   { to: '/admin/expenses', label: 'Expenses', icon: Wallet },
   { to: '/admin/bills', label: 'Bill History', icon: Receipt },
   { to: '/admin/workers', label: 'Workers', icon: Users },
@@ -41,6 +43,7 @@ export default function AdminLayout({ onLogout }) {
         </a>
       </nav>
       <main className="admin-main">
+        <BackupBanner />
         <Outlet />
       </main>
     </div>

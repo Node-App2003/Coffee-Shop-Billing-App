@@ -198,9 +198,9 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
   .products { padding-bottom: 90px; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
   .admin { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; }
   .admin-top { display: flex; }
-  .side { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 8px; overflow: visible; }
+  .side { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; padding: 8px; overflow: visible; }
   .side .logo, .side .desk-only { display: none; }
-  .side a { flex-direction: column; justify-content: center; text-align: center; gap: 4px; font-size: 12px; padding: 8px 2px; line-height: 1.2; }
+  .side a { flex-direction: column; justify-content: center; text-align: center; gap: 4px; font-size: 11px; padding: 8px 2px; line-height: 1.2; }
   .admin-main { padding: 14px; }
   .pay-methods { grid-template-columns: repeat(2, 1fr); }
 }
@@ -232,3 +232,10 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 8px 0 12px; }
 .keypad button { height: 58px; border-radius: 14px; border: 1px solid var(--line); background: #fff; font-size: 22px; font-weight: 600; color: var(--brown-dark); display: flex; align-items: center; justify-content: center; }
 .keypad button:active { background: var(--brown-light); }
+
+/* backup reminder + closing */
+.banner { background: #fff4e5; border: 1px solid #f0c987; color: #7a4a00; border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; font-size: 14px; }
+.diff-ok { color: #2e7d32; font-weight: 700; }
+.diff-bad { color: #c62828; font-weight: 700; }
+.dev-list { display: grid; gap: 8px; margin: 10px 0; }
+.dev { display: flex; justify-content: space-between; align-items: center; gap: 8px; border: 1px solid var(--line, #e6d7ca); border-radius: 10px; padding: 8px 10px; }

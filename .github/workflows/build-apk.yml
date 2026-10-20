@@ -31,6 +31,38 @@ jobs:
           if [ ! -d android ]; then npx cap add android; fi
           npx cap sync android
 
+      - name: Bluetooth printer - permissions + ask them on app start
+        run: |
+          M=android/app/src/main/AndroidManifest.xml
+          for P in BLUETOOTH BLUETOOTH_ADMIN BLUETOOTH_SCAN BLUETOOTH_CONNECT ACCESS_FINE_LOCATION; do
+            grep -q "android.permission.$P\"" "$M" || sed -i "s|</manifest>|    <uses-permission android:name=\"android.permission.$P\" />\n</manifest>|" "$M"
+          done
+          cat > android/app/src/main/java/com/cafe/billing/MainActivity.java <<'JAVA'
+          package com.cafe.billing;
+
+          import android.Manifest;
+          import android.os.Build;
+          import android.os.Bundle;
+          import androidx.core.app.ActivityCompat;
+          import com.getcapacitor.BridgeActivity;
+
+          public class MainActivity extends BridgeActivity {
+            @Override
+            public void onCreate(Bundle savedInstanceState) {
+              super.onCreate(savedInstanceState);
+              if (Build.VERSION.SDK_INT >= 31) {
+                ActivityCompat.requestPermissions(this, new String[] {
+                  Manifest.permission.BLUETOOTH_CONNECT,
+                  Manifest.permission.BLUETOOTH_SCAN,
+                  Manifest.permission.ACCESS_FINE_LOCATION
+                }, 1);
+              } else if (Build.VERSION.SDK_INT >= 23) {
+                ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.ACCESS_FINE_LOCATION }, 1);
+              }
+            }
+          }
+          JAVA
+
       - name: Use the fixed signing key (so every new APK installs over the old one)
         run: |
           mkdir -p ~/.android

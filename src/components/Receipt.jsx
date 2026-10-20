@@ -9,6 +9,7 @@ export function ReceiptBody({ bill }) {
       <div className="c shop">{s.shopName}</div>
       {s.address && <div className="c addr">{s.address}</div>}
       {s.phone && <div className="c">Ph: {s.phone}</div>}
+      {s.gstin && <div className="c">GSTIN: {s.gstin}</div>}
       <hr />
       <div className="kv left"><span>Bill No :</span><b>{bill.number}</b></div>
       <div className="kv left"><span>Date&nbsp;&nbsp;&nbsp;:</span><span>{fmtDateTime(bill.createdAt)}</span></div>

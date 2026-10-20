@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { Save, Download, Upload } from 'lucide-react';
+import { Save, Download, Upload, Printer, Bluetooth } from 'lucide-react';
 import { useStore, actions, verifyLogin } from '../../store.js';
-import { saveText, dmy } from '../../utils.js';
+import { isNative, fmtDateTime } from '../../utils.js';
+import { shareBackup } from '../../backup.js';
 import { QuickLoginCard } from '../../components/QuickLogin.jsx';
 
+const GSTIN_RE = /^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+
 export default function Settings() {
-  const { settings, auth } = useStore();
+  const { settings, auth, lastBackupAt } = useStore();
   const [s, setS] = useState(settings);
   const [saved, setSaved] = useState(false);
 
@@ -15,6 +18,7 @@ export default function Settings() {
   };
 
   const saveShop = () => {
+    if (s.gstin && !GSTIN_RE.test(s.gstin.trim())) return window.alert('GSTIN format sari illa. 15 characters venum (example: 33ABCDE1234F1Z5) - illa empty-a vidunga.');
     actions.updateSettings({
       ...s,
       shopName: s.shopName.trim() || 'My Coffee Shop',
@@ -22,6 +26,7 @@ export default function Settings() {
       taxRate: Number(s.taxRate) || 0,
       billPrefix: (s.billPrefix || 'FB').trim().toUpperCase(),
       upiId: (s.upiId || '').trim(),
+      gstin: (s.gstin || '').trim().toUpperCase(),
     });
     setSaved(true);
   };
@@ -70,6 +75,11 @@ export default function Settings() {
             <textarea className="input" rows={2} value={s.address} onChange={(e) => set('address', e.target.value)} /></div>
           <div className="field"><label>Phone number</label>
             <input className="input" value={s.phone} onChange={(e) => set('phone', e.target.value)} /></div>
+          <div className="field"><label>GST number (GSTIN)</label>
+            <input className="input" autoCapitalize="characters" maxLength={15} placeholder="33ABCDE1234F1Z5" value={s.gstin || ''} onChange={(e) => set('gstin', e.target.value.toUpperCase())} />
+            <span className="muted small">Bill-la shop name keezha print aagum. Venaa-na empty-a vidunga.</span>
+            {s.gstin && !GSTIN_RE.test(s.gstin.trim()) && <span className="err">GSTIN 15 characters irukkanum (example: 33ABCDE1234F1Z5)</span>}
+          </div>
           <div className="row">
             <div className="field grow"><label>Currency</label>
               <input className="input" value={s.currency} maxLength={4} onChange={(e) => set('currency', e.target.value)} /></div>
@@ -128,14 +138,19 @@ export default function Settings() {
 
           <QuickLoginCard />
 
+          <PrinterCard s={s} set={set} />
+
           <div className="card">
             <h3>Backup</h3>
             <p className="muted small" style={{ marginTop: 0 }}>
-              All data is stored on this device. Take a backup regularly - it also lets you move to a new phone.
+              All data indha device-la mattum irukku. Backup button-a thatti WhatsApp / Google Drive / Gmail-la file-a save pannunga (3 naal ku mela edukkala-na admin-la reminder varum).
+            </p>
+            <p className="small" style={{ marginTop: 0 }}>
+              Last backup: <b>{lastBackupAt ? fmtDateTime(lastBackupAt) : 'Innum edukkala'}</b>
             </p>
             <div className="row wrap">
-              <button className="btn" onClick={() => saveText(`cafe-backup-${dmy()}.json`, actions.exportBackup(), 'application/json')}>
-                <Download size={16} /> Export backup
+              <button className="btn" onClick={() => shareBackup().catch((e) => window.alert(e?.message || 'Backup aagala'))}>
+                <Download size={16} /> Backup (share / save)
               </button>
               <label className="btn" style={{ cursor: 'pointer' }}>
                 <Upload size={16} /> Restore backup
@@ -146,5 +161,87 @@ export default function Settings() {
         </div>
       </div>
     </>
+  );
+}
+
+/* ---- Bluetooth thermal printer (APK only) ---- */
+function PrinterCard({ s, set }) {
+  const [devices, setDevices] = useState([]);
+  const [scanning, setScanning] = useState(false);
+  const [msg, setMsg] = useState('');
+  const native = isNative();
+
+  // printer choices are saved immediately (no need to press "Save settings")
+  const pick = (patch) => {
+    Object.entries(patch).forEach(([k, v]) => set(k, v));
+    actions.updateSettings(patch);
+  };
+
+  const scan = async () => {
+    setMsg('');
+    setScanning(true);
+    try {
+      const bt = await import('../../bluetoothPrinter.js');
+      const found = await bt.scanPrinters(setDevices);
+      if (!found.length) setMsg('Printer kidaikkala. Phone Bluetooth-la printer-a pair pannitu marubadi scan pannunga.');
+    } catch (e) {
+      setMsg(e?.message || 'Scan aagala - Bluetooth permission allow pannirukkingala?');
+    }
+    setScanning(false);
+  };
+
+  const test = async () => {
+    setMsg('');
+    try {
+      const bt = await import('../../bluetoothPrinter.js');
+      await bt.testPrint(s.printerAddress, s.printerPaper === '80' ? 48 : 32);
+      setMsg('Test print anupirukkom ✓');
+    } catch (e) {
+      setMsg(e?.message || 'Print aagala');
+    }
+  };
+
+  return (
+    <div className="card">
+      <h3><Bluetooth size={16} style={{ verticalAlign: -3 }} /> Bluetooth printer</h3>
+      {!native ? (
+        <p className="muted small" style={{ marginTop: 0 }}>Indha option Android APK-la mattum work aagum (browser-la normal print dialog varum).</p>
+      ) : (
+        <>
+          <p className="muted small" style={{ marginTop: 0 }}>
+            Mudhalla phone Settings - Bluetooth-la printer-a pair pannunga. Appuram inga Scan pannunga. Select pannina aprm "Print &amp; Save" nera printer-la print aagum.
+          </p>
+          <div className="field"><label>Paper size</label>
+            <select className="input" value={s.printerPaper} onChange={(e) => pick({ printerPaper: e.target.value })}>
+              <option value="58">58 mm (small printer)</option>
+              <option value="80">80 mm</option>
+            </select>
+          </div>
+          {s.printerAddress ? (
+            <div className="dev">
+              <span><b>{s.printerName || 'Printer'}</b><br /><span className="muted small">{s.printerAddress}</span></span>
+              <span className="row">
+                <button className="btn sm" onClick={test}><Printer size={14} /> Test</button>
+                <button className="btn sm danger" onClick={() => pick({ printerAddress: '', printerName: '' })}>Remove</button>
+              </span>
+            </div>
+          ) : (
+            <span className="badge">Printer select pannala - PDF share use aagum</span>
+          )}
+          <div className="row" style={{ marginTop: 10 }}>
+            <button className="btn" disabled={scanning} onClick={scan}>{scanning ? 'Scanning...' : 'Scan printers'}</button>
+          </div>
+          <div className="dev-list">
+            {devices.map((d) => (
+              <div className="dev" key={d.address}>
+                <span><b>{d.name}</b><br /><span className="muted small">{d.address}</span></span>
+                <button className="btn sm primary" onClick={() => pick({ printerAddress: d.address, printerName: d.name })}>Select</button>
+              </div>
+            ))}
+          </div>
+          {msg && <div className="small">{msg}</div>}
+        </>
+      )}
+    </div>
   );
 }
