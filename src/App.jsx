@@ -14,7 +14,6 @@ import Categories from './pages/admin/Categories.jsx';
 import Expenses from './pages/admin/Expenses.jsx';
 import Bills from './pages/admin/Bills.jsx';
 import Workers from './pages/admin/Workers.jsx';
-import DayClose from './pages/admin/DayClose.jsx';
 import Settings from './pages/admin/Settings.jsx';
 
 // Browser: clean URLs (/admin). Android APK: hash URLs (more reliable inside the WebView).
@@ -71,7 +70,6 @@ export default function App() {
           <Route path="sales" element={<Sales />} />
           <Route path="products" element={<Products />} />
           <Route path="categories" element={<Categories />} />
-          <Route path="closing" element={<DayClose />} />
           <Route path="expenses" element={<Expenses />} />
           <Route path="bills" element={<Bills />} />
           <Route path="workers" element={<Workers />} />

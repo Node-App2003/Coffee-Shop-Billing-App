@@ -64,7 +64,6 @@ const initial = () => ({
   // passHash null = default password (admin123). PIN is an optional quick-login after the first password login.
   auth: { username: 'admin', passHash: null, pinHash: null, pinLen: 0, pinFails: 0, quickPrompted: false },
   seqs: {},
-  dayClosings: [], // daily closing reports
   lastBackupAt: null,
 });
 
@@ -301,15 +300,6 @@ export const actions = {
     });
   },
 
-  /* daily closing: one record per date (closing again the same day replaces it) */
-  saveDayClosing(c) {
-    const rec = { ...c, id: uid(), closedAt: new Date().toISOString() };
-    commit({ ...state, dayClosings: [rec, ...state.dayClosings.filter((x) => x.date !== c.date)] });
-    return rec;
-  },
-  deleteDayClosing(id) {
-    commit({ ...state, dayClosings: state.dayClosings.filter((x) => x.id !== id) });
-  },
   markBackup() {
     commit({ ...state, lastBackupAt: new Date().toISOString() });
   },
