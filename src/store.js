@@ -65,6 +65,7 @@ const initial = () => ({
   auth: { username: 'admin', passHash: null, pinHash: null, pinLen: 0, pinFails: 0, quickPrompted: false },
   seqs: {},
   lastBackupAt: null,
+  heldBills: [], // bills put on hold: { id, label, items, heldAt }
 });
 
 /* ---------- persistence ---------- */
@@ -237,6 +238,15 @@ export const actions = {
     };
     commit({ ...state, bills: [bill, ...state.bills], seqs: { ...state.seqs, [year]: seq } });
     return bill;
+  },
+
+  /* hold bill: parked carts (kept even if the app is closed) */
+  holdBill(items, label = '') {
+    const rec = { id: uid(), label: label.trim(), items, heldAt: new Date().toISOString() };
+    commit({ ...state, heldBills: [rec, ...(state.heldBills || [])] });
+  },
+  deleteHeld(id) {
+    commit({ ...state, heldBills: (state.heldBills || []).filter((x) => x.id !== id) });
   },
 
   /* expenses */

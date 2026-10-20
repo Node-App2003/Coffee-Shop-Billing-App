@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Search, Plus, Minus, Trash2, ShoppingCart, Banknote, Smartphone, CreditCard,
-  Wallet, Printer, Lock, Coffee, X, Check, Smartphone as Phone,
+  Wallet, Printer, Lock, Coffee, X, Check, Smartphone as Phone, PauseCircle, Play,
 } from 'lucide-react';
 import { useStore, actions } from '../store.js';
 import QRCode from 'qrcode';
-import { calcTotals, money, num, round2, printBill } from '../utils.js';
+import { calcTotals, money, num, round2, printBill, fmtDateTime } from '../utils.js';
 import Modal from '../components/Modal.jsx';
 import { ReceiptBody, PrintPortal } from '../components/Receipt.jsx';
 
@@ -18,7 +18,7 @@ const METHODS = [
 ];
 
 export default function Billing() {
-  const { categories, products, settings } = useStore();
+  const { categories, products, settings, heldBills = [] } = useStore();
   const cur = settings.currency || '₹';
 
   const [cat, setCat] = useState('all');
@@ -32,6 +32,7 @@ export default function Billing() {
   const [draft, setDraft] = useState(null); // bill preview, NOT stored yet
   const [saved, setSaved] = useState(false); // true once Print has stored it
   const [qr, setQr] = useState('');
+  const [heldOpen, setHeldOpen] = useState(false);
 
   const totals = useMemo(() => calcTotals(cart, settings), [cart, settings]);
   const itemCount = cart.reduce((s, i) => s + i.qty, 0);
@@ -59,6 +60,26 @@ export default function Billing() {
   const remove = (id) => setCart((c) => c.filter((i) => i.id !== id));
   const clear = () => {
     if (cart.length && window.confirm('Clear the whole cart?')) setCart([]);
+  };
+
+  /* ---- hold / resume ---- */
+  const hold = () => {
+    if (!cart.length) return;
+    const label = window.prompt('Hold name (table / customer) - optional', '');
+    if (label === null) return; // cancelled
+    actions.holdBill(cart, label);
+    setCart([]);
+    setCartOpen(false);
+  };
+  const resume = (h) => {
+    // a cart that is being billed right now is parked automatically, so nothing is lost
+    if (cart.length) actions.holdBill(cart, 'Auto hold');
+    setCart(h.items);
+    actions.deleteHeld(h.id);
+    setHeldOpen(false);
+  };
+  const dropHeld = (h) => {
+    if (window.confirm('Indha held bill-a delete pannanuma?')) actions.deleteHeld(h.id);
   };
 
   const openPay = () => {
@@ -136,9 +157,14 @@ export default function Billing() {
               <div className="brand">
                 <Coffee size={22} /> {settings.shopName}
               </div>
-              <Link to="/admin" className="admin-link">
-                <Lock size={14} /> Admin
-              </Link>
+              <div className="row">
+                <button className="admin-link" onClick={() => setHeldOpen(true)}>
+                  <PauseCircle size={14} /> Held ({heldBills.length})
+                </button>
+                <Link to="/admin" className="admin-link">
+                  <Lock size={14} /> Admin
+                </Link>
+              </div>
             </div>
             <div className="search">
               <Search size={17} />
@@ -240,6 +266,9 @@ export default function Billing() {
             <div className="t grand"><span>Total</span><span>{money(totals.total, cur)}</span></div>
           </div>
           <div className="cart-foot">
+            <button className="btn" disabled={!cart.length} onClick={hold}>
+              <PauseCircle size={16} /> Hold
+            </button>
             <button className="btn primary" disabled={!cart.length} onClick={openPay}>
               Pay {money(totals.total, cur)}
             </button>
@@ -253,6 +282,31 @@ export default function Billing() {
           </button>
         )}
       </div>
+
+      {heldOpen && (
+        <Modal title="Held bills" onClose={() => setHeldOpen(false)}>
+          {heldBills.length === 0 && <div className="muted">Hold pannina bill edhuvum illa</div>}
+          <div className="dev-list">
+            {heldBills.map((h) => {
+              const cnt = h.items.reduce((s, i) => s + i.qty, 0);
+              const tot = calcTotals(h.items, settings).total;
+              return (
+                <div className="dev" key={h.id}>
+                  <span>
+                    <b>{h.label || 'Held bill'}</b> - {money(tot, cur)}<br />
+                    <span className="muted small">{cnt} items - {fmtDateTime(h.heldAt)}</span>
+                  </span>
+                  <span className="row">
+                    <button className="btn sm primary" onClick={() => resume(h)}><Play size={14} /> Resume</button>
+                    <button className="btn sm danger icon" onClick={() => dropHeld(h)}><Trash2 size={14} /></button>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="actions"><button className="btn" onClick={() => setHeldOpen(false)}>Close</button></div>
+        </Modal>
+      )}
 
       {payOpen && (
         <Modal title="Payment" onClose={() => setPayOpen(false)}>
