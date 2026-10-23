@@ -39,12 +39,15 @@ export default function Billing() {
 
   const catIcon = (id) => categories.find((c) => c.id === id)?.icon || '☕';
 
+  // disabled categories (and their products) are hidden from billing
+  const shownCats = useMemo(() => categories.filter((c) => c.enabled !== false), [categories]);
   const visible = useMemo(() => {
     const t = q.trim().toLowerCase();
+    const okCat = new Set(shownCats.map((c) => c.id));
     return products.filter(
-      (p) => p.enabled && (cat === 'all' || p.categoryId === cat) && (!t || p.name.toLowerCase().includes(t))
+      (p) => p.enabled && okCat.has(p.categoryId) && (cat === 'all' || p.categoryId === cat) && (!t || p.name.toLowerCase().includes(t))
     );
-  }, [products, cat, q]);
+  }, [products, shownCats, cat, q]);
 
   const qtyOf = (id) => cart.find((i) => i.id === id)?.qty || 0;
 
@@ -179,7 +182,7 @@ export default function Billing() {
               <button className={`cat ${cat === 'all' ? 'active' : ''}`} onClick={() => setCat('all')}>
                 All
               </button>
-              {categories.map((c) => (
+              {shownCats.map((c) => (
                 <button
                   key={c.id}
                   className={`cat ${cat === c.id ? 'active' : ''}`}

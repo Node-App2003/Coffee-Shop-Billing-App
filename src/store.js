@@ -193,6 +193,12 @@ export const actions = {
         : [...state.categories, { ...cat, id: uid() }],
     });
   },
+  toggleCategory(id) {
+    commit({
+      ...state,
+      categories: state.categories.map((x) => (x.id === id ? { ...x, enabled: x.enabled === false } : x)),
+    });
+  },
   deleteCategory(id) {
     const count = state.products.filter((x) => x.categoryId === id).length;
     if (count > 0) return { ok: false, count };

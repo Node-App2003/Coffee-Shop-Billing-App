@@ -12,8 +12,8 @@ export default function Categories() {
 
   const count = (id) => products.filter((p) => p.categoryId === id).length;
 
-  const head = ['Category', 'Products'];
-  const rows = categories.map((c) => [c.name, count(c.id)]);
+  const head = ['Category', 'Products', 'Status'];
+  const rows = categories.map((c) => [c.name, count(c.id), c.enabled === false ? 'Disabled' : 'Enabled']);
 
   const save = () => {
     if (!edit.name.trim()) return setError('Category name is required');
@@ -47,7 +47,7 @@ export default function Categories() {
               })
             }
           />
-          <button className="btn primary" onClick={() => { setError(''); setEdit({ id: '', name: '', icon: '🍽️' }); }}>
+          <button className="btn primary" onClick={() => { setError(''); setEdit({ id: '', name: '', icon: '🍽️', enabled: true }); }}>
             <Plus size={16} /> Add Category
           </button>
         </div>
@@ -55,16 +55,21 @@ export default function Categories() {
 
       <div className="card table-wrap">
         <table className="tbl">
-          <thead><tr><th>Icon</th><th>Name</th><th className="num">Products</th><th></th></tr></thead>
+          <thead><tr><th>Icon</th><th>Name</th><th className="num">Products</th><th>Status</th><th></th></tr></thead>
           <tbody>
             {categories.length === 0 && (
-              <tr><td colSpan={4} className="muted" style={{ textAlign: 'center' }}>No categories</td></tr>
+              <tr><td colSpan={5} className="muted" style={{ textAlign: 'center' }}>No categories</td></tr>
             )}
             {categories.map((c) => (
               <tr key={c.id}>
                 <td style={{ fontSize: 22 }}>{c.icon}</td>
                 <td><b>{c.name}</b></td>
                 <td className="num">{count(c.id)}</td>
+                <td>
+                  <button className={`badge ${c.enabled === false ? 'off' : 'green'}`} style={{ border: 0, cursor: 'pointer' }} onClick={() => actions.toggleCategory(c.id)}>
+                    {c.enabled === false ? 'Disabled' : 'Enabled'}
+                  </button>
+                </td>
                 <td className="right" style={{ whiteSpace: 'nowrap' }}>
                   <button className="btn sm icon" onClick={() => { setError(''); setEdit({ ...c }); }}><Pencil size={14} /></button>{' '}
                   <button className="btn sm icon danger" onClick={() => del(c)}><Trash2 size={14} /></button>
@@ -85,6 +90,10 @@ export default function Categories() {
             <label>Icon (emoji)</label>
             <input className="input" value={edit.icon} maxLength={4} onChange={(e) => setEdit({ ...edit, icon: e.target.value })} />
           </div>
+          <label className="check">
+            <input type="checkbox" checked={edit.enabled !== false} onChange={(e) => setEdit({ ...edit, enabled: e.target.checked })} />
+            Enabled (Billing page-la kaattum)
+          </label>
           {error && <div className="err">{error}</div>}
           <div className="actions">
             <button className="btn" onClick={() => setEdit(null)}>Cancel</button>
